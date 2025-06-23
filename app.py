@@ -218,13 +218,15 @@ class GoogleADKMultiAgent:
 #     except requests.exceptions.RequestException: return []
 
 def geocode_address(address: str) -> Dict[str, Any]:
-    api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')
+    # Try multiple possible API key names
+    api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY') or get_secret('GOOGLE_API_KEY')
     
     # Debug information for Streamlit Cloud
     print(f"🔍 DEBUG: API key loaded: {'YES' if api_key else 'NO'}")
     if api_key:
         print(f"🔍 DEBUG: API key length: {len(api_key)}")
         print(f"🔍 DEBUG: API key starts with: {api_key[:10]}...")
+        print(f"🔍 DEBUG: API key is placeholder: {api_key.startswith('YOUR_')}")
     
     if not api_key: 
         return {"error": "Google Maps API key is required. Please add GOOGLE_MAPS_API_KEY to your .env file or Streamlit secrets.", "source": "no_api_key"}
@@ -240,6 +242,8 @@ def geocode_address(address: str) -> Dict[str, Any]:
         print(f"🔍 DEBUG: Geocoding API response status: {data.get('status')}")
         if data.get('status') == 'REQUEST_DENIED':
             print(f"🔍 DEBUG: Full API response: {data}")
+            print(f"🔍 DEBUG: Request URL: {url}")
+            print(f"🔍 DEBUG: API key used: {api_key[:20]}...")
         
         if data['status'] == 'OK' and data['results']:
             location = data['results'][0]['geometry']['location']
@@ -284,11 +288,10 @@ def main():
     with st.expander("🔧 Debug Information (Streamlit Cloud)", expanded=False):
         st.write("**Environment Check:**")
         try:
-            import streamlit as st
+            # Check if our key exists in secrets
             if hasattr(st, 'secrets'):
                 st.write("✅ st.secrets is available")
                 try:
-                    # Check if our key exists in secrets
                     if 'GOOGLE_MAPS_API_KEY' in st.secrets:
                         key_value = st.secrets['GOOGLE_MAPS_API_KEY']
                         st.write(f"✅ GOOGLE_MAPS_API_KEY found in secrets")
