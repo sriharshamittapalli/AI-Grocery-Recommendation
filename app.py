@@ -365,7 +365,7 @@ def main():
         3. 🛒 Add items to your shopping list.
         4. 🚀 Click 'Execute' to get your optimized plan!
         
-        **Use the sidebar to get started →**
+        **<- Use the sidebar to get started**
         """)
 
 if __name__ == "__main__":
