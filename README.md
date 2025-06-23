@@ -81,29 +81,173 @@ store_response = self.store_finder_agent.run(store_request)
 
 ## 🏗️ System Architecture
 
+### 🎯 Multi-Agent Workflow Architecture
+
 ```mermaid
 graph TD
-    A[👤 User Input] --> B[🎯 Root Coordination Agent]
-    B --> C[🏪 Store Finder Agent]
-    B --> D[💰 Price Optimizer Agent] 
-    B --> E[🗺️ Route Optimizer Agent]
-    B --> F[📋 Shopping Advisor Agent]
+    A[User Input] --> B[Root Coordination Agent]
+    B --> |"Coordinates workflow"| C[Store Finder Agent]
+    B --> |"Manages data flow"| D[Price Optimizer Agent]
+    B --> |"Orchestrates sequence"| E[Route Optimizer Agent]
+    B --> |"Finalizes recommendations"| F[Shopping Advisor Agent]
     
-    C --> G[🔍 Google Places API]
-    C --> H[📍 Google Geocoding API]
-    D --> I[💵 Price Estimation Engine]
-    E --> J[🗺️ Google Maps API]
-    E --> K[📏 Distance Matrix API]
-    F --> L[✅ Final Recommendations]
+    C --> |"Google Places API"| G[Places API]
+    C --> |"Google Distance Matrix API"| H[Distance Matrix API]
+    G --> |"Store locations"| C
+    H --> |"Travel times"| C
+    C --> |"Filtered stores"| D
     
-    G --> M[🏪 Store Database]
-    I --> N[📊 Cost-Benefit Analysis]
-    J --> O[🛣️ Optimized Routes]
+    D --> |"Price analysis"| I[Price Database]
+    I --> |"Store prices"| D
+    D --> |"Optimized pricing"| E
     
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style L fill:#e8f5e8
+    E --> |"Google Directions API"| J[Directions API]
+    J --> |"Optimized routes"| E
+    E --> |"Route data"| K[Cost Calculator]
+    K --> |"Gas & time costs"| E
+    E --> |"Complete route plan"| F
+    
+    F --> |"Final recommendations"| L[Streamlit UI]
+    L --> |"User selections"| A
+    
+    subgraph "Google Cloud ADK"
+        B
+        C
+        D
+        E
+        F
+    end
+    
+    subgraph "Google Maps Platform"
+        G
+        H
+        J
+    end
+    
+    subgraph "Cost Analysis Engine"
+        I
+        K
+    end
+    
+    style B fill:#4285f4,stroke:#333,stroke-width:3px,color:#fff
+    style C fill:#34a853,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#fbbc04,stroke:#333,stroke-width:2px,color:#fff
+    style E fill:#ea4335,stroke:#333,stroke-width:2px,color:#fff
+    style F fill:#9c27b0,stroke:#333,stroke-width:2px,color:#fff
 ```
+
+### 🏢 Detailed System Architecture
+
+```mermaid
+graph TB
+    subgraph "User Interface Layer"
+        UI[Streamlit Web App]
+        UX[User Experience Dashboard]
+    end
+    
+    subgraph "Google ADK Multi-Agent System"
+        RCA[Root Coordination Agent<br/>🎯 Workflow Orchestrator]
+        SFA[Store Finder Agent<br/>🏪 Location Discovery]
+        POA[Price Optimizer Agent<br/>💰 Cost Analysis]
+        ROA[Route Optimizer Agent<br/>🗺️ Path Planning]
+        SAA[Shopping Advisor Agent<br/>🤖 Recommendation Engine]
+    end
+    
+    subgraph "Google Cloud APIs"
+        GPA[Google Places API<br/>Store Discovery]
+        GGA[Google Geocoding API<br/>Address Processing]
+        GDA[Google Directions API<br/>Route Calculation]
+        DMA[Google Distance Matrix API<br/>Travel Time Analysis]
+    end
+    
+    subgraph "Data Processing Layer"
+        PDB[Price Database<br/>Multi-Store Pricing]
+        CCE[Cost Calculation Engine<br/>Gas + Time Analysis]
+        ODM[Optimization Decision Matrix<br/>Multi-Criteria Analysis]
+    end
+    
+    subgraph "External Services"
+        SC[Streamlit Cloud<br/>Deployment Platform]
+        ENV[Environment Variables<br/>API Key Management]
+    end
+    
+    UI --> RCA
+    RCA -.-> |"Agent Communication"| SFA
+    RCA -.-> |"Data Coordination"| POA
+    RCA -.-> |"Workflow Control"| ROA
+    RCA -.-> |"Final Assembly"| SAA
+    
+    SFA --> GPA
+    SFA --> GGA
+    SFA --> DMA
+    POA --> PDB
+    ROA --> GDA
+    ROA --> CCE
+    SAA --> ODM
+    
+    GPA --> SFA
+    GGA --> SFA
+    DMA --> SFA
+    PDB --> POA
+    GDA --> ROA
+    CCE --> ROA
+    ODM --> SAA
+    
+    SFA --> POA
+    POA --> ROA
+    ROA --> SAA
+    SAA --> UI
+    
+    SC --> UI
+    ENV --> RCA
+    
+    style RCA fill:#4285f4,stroke:#333,stroke-width:4px,color:#fff
+    style SFA fill:#34a853,stroke:#333,stroke-width:3px,color:#fff
+    style POA fill:#fbbc04,stroke:#333,stroke-width:3px,color:#000
+    style ROA fill:#ea4335,stroke:#333,stroke-width:3px,color:#fff
+    style SAA fill:#9c27b0,stroke:#333,stroke-width:3px,color:#fff
+    style UI fill:#ff6d01,stroke:#333,stroke-width:3px,color:#fff
+```
+
+### 🔄 Agent Communication Flow
+
+**1. User Input Processing**
+- User enters location, store preferences, and shopping list
+- Input validation and preprocessing
+
+**2. Root Coordination Agent Orchestration**
+- Initializes workflow with user requirements
+- Coordinates communication between specialized agents
+- Manages data flow and error handling
+
+**3. Store Finder Agent Execution**
+- Queries Google Places API for nearby stores
+- Filters results by distance and relevance
+- Uses Distance Matrix API for accurate travel times
+- Returns optimized store list to coordination agent
+
+**4. Price Optimizer Agent Analysis**
+- Receives store data from Store Finder Agent
+- Analyzes pricing across different store chains
+- Calculates cost-benefit scenarios
+- Optimizes item allocation per store
+
+**5. Route Optimizer Agent Planning**
+- Receives store locations and shopping assignments
+- Uses Google Directions API for route optimization
+- Calculates gas costs and travel time
+- Generates turn-by-turn navigation links
+
+**6. Shopping Advisor Agent Synthesis**
+- Combines all agent outputs
+- Generates final recommendations
+- Provides cost savings analysis
+- Creates actionable shopping strategy
+
+**7. Results Presentation**
+- Multi-tab interface showing optimized plan
+- Interactive route maps with Google Maps integration
+- Detailed cost breakdowns and savings calculations
 
 ## 🎯 Hackathon Judge Quick Start (30 Seconds!)
 
