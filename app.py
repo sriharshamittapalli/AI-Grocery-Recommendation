@@ -221,13 +221,6 @@ def geocode_address(address: str) -> Dict[str, Any]:
     # Try multiple possible API key names
     api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY') or get_secret('GOOGLE_API_KEY')
     
-    # Debug information for Streamlit Cloud
-    print(f"🔍 DEBUG: API key loaded: {'YES' if api_key else 'NO'}")
-    if api_key:
-        print(f"🔍 DEBUG: API key length: {len(api_key)}")
-        print(f"🔍 DEBUG: API key starts with: {api_key[:10]}...")
-        print(f"🔍 DEBUG: API key is placeholder: {api_key.startswith('YOUR_')}")
-    
     if not api_key: 
         return {"error": "Google Maps API key is required. Please add GOOGLE_MAPS_API_KEY to your .env file or Streamlit secrets.", "source": "no_api_key"}
     if not address or not address.strip(): 
@@ -239,16 +232,9 @@ def geocode_address(address: str) -> Dict[str, Any]:
         response = requests.get(url, params=params, timeout=15)
         data = response.json()
         
-        print(f"🔍 DEBUG: Geocoding API response status: {data.get('status')}")
-        if data.get('status') == 'REQUEST_DENIED':
-            print(f"🔍 DEBUG: Full API response: {data}")
-            print(f"🔍 DEBUG: Request URL: {url}")
-            print(f"🔍 DEBUG: API key used: {api_key[:20]}...")
-        
         if data['status'] == 'OK' and data['results']:
             location = data['results'][0]['geometry']['location']
             formatted_address = data['results'][0]['formatted_address']
-            print(f"Successfully geocoded: {formatted_address}")
             return {"lat": location['lat'], "lng": location['lng'], "formatted_address": formatted_address, "source": "google_api"}
         elif data['status'] == 'ZERO_RESULTS': 
             return {"error": f"Location '{address}' not found. Please try a more specific address (e.g., 'San Francisco, CA' or '123 Main St, New York, NY')", "source": "not_found"}
@@ -260,7 +246,6 @@ def geocode_address(address: str) -> Dict[str, Any]:
     except requests.exceptions.Timeout: 
         return {"error": "Location lookup timed out. Please try again.", "source": "timeout"}
     except Exception as e:
-        print(f"Geocoding error: {e}")
         return {"error": f"Error looking up location: {str(e)}", "source": "error"}
 
 # def create_route_map(user_location, stores):
@@ -283,39 +268,6 @@ def geocode_address(address: str) -> Dict[str, Any]:
 def main():
     st.title("🤖 Smart Grocery Assistant")
     st.subheader("Google ADK Multi-Agent Shopping Optimization")
-    
-    # DEBUG: Add debugging info at the top of the app for Streamlit Cloud
-    with st.expander("🔧 Debug Information (Streamlit Cloud)", expanded=False):
-        st.write("**Environment Check:**")
-        try:
-            # Check if our key exists in secrets
-            if hasattr(st, 'secrets'):
-                st.write("✅ st.secrets is available")
-                try:
-                    if 'GOOGLE_MAPS_API_KEY' in st.secrets:
-                        key_value = st.secrets['GOOGLE_MAPS_API_KEY']
-                        st.write(f"✅ GOOGLE_MAPS_API_KEY found in secrets")
-                        st.write(f"📏 Key length: {len(key_value)}")
-                        st.write(f"🔤 Key starts with: {key_value[:15]}...")
-                        st.write(f"🔍 Is placeholder?: {key_value.startswith('YOUR_')}")
-                    else:
-                        st.write("❌ GOOGLE_MAPS_API_KEY not found in st.secrets")
-                        st.write(f"Available secrets keys: {list(st.secrets.keys())}")
-                except Exception as e:
-                    st.write(f"❌ Error accessing secrets: {e}")
-            else:
-                st.write("❌ st.secrets not available")
-        except Exception as e:
-            st.write(f"❌ Error checking Streamlit: {e}")
-        
-        # Test the secrets utility
-        from secrets_utils import get_secret
-        st.write("**Secrets Utility Test:**")
-        test_key = get_secret('GOOGLE_MAPS_API_KEY')
-        if test_key:
-            st.write(f"✅ get_secret() returned: {test_key[:15]}...")
-        else:
-            st.write("❌ get_secret() returned None")
     
     multi_agent = GoogleADKMultiAgent()
     if 'workflow_inputs' not in st.session_state: st.session_state.workflow_inputs = None
