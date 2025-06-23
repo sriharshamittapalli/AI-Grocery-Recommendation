@@ -219,25 +219,42 @@ class GoogleADKMultiAgent:
 
 def geocode_address(address: str) -> Dict[str, Any]:
     api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')
-    if not api_key: return {"error": "Google Maps API key is required. Please add GOOGLE_MAPS_API_KEY to your .env file or Streamlit secrets.", "source": "no_api_key"}
-    if not address or not address.strip(): return {"error": "Please enter a valid location", "source": "error"}
+    
+    # Debug information for Streamlit Cloud
+    print(f"🔍 DEBUG: API key loaded: {'YES' if api_key else 'NO'}")
+    if api_key:
+        print(f"🔍 DEBUG: API key length: {len(api_key)}")
+        print(f"🔍 DEBUG: API key starts with: {api_key[:10]}...")
+    
+    if not api_key: 
+        return {"error": "Google Maps API key is required. Please add GOOGLE_MAPS_API_KEY to your .env file or Streamlit secrets.", "source": "no_api_key"}
+    if not address or not address.strip(): 
+        return {"error": "Please enter a valid location", "source": "error"}
     
     try:
         url = f"https://maps.googleapis.com/maps/api/geocode/json"
         params = {'address': address.strip(), 'key': api_key}
         response = requests.get(url, params=params, timeout=15)
         data = response.json()
-        print(f"Geocoding API response for '{address}': {data.get('status')}")
+        
+        print(f"🔍 DEBUG: Geocoding API response status: {data.get('status')}")
+        if data.get('status') == 'REQUEST_DENIED':
+            print(f"🔍 DEBUG: Full API response: {data}")
+        
         if data['status'] == 'OK' and data['results']:
             location = data['results'][0]['geometry']['location']
             formatted_address = data['results'][0]['formatted_address']
             print(f"Successfully geocoded: {formatted_address}")
             return {"lat": location['lat'], "lng": location['lng'], "formatted_address": formatted_address, "source": "google_api"}
-        elif data['status'] == 'ZERO_RESULTS': return {"error": f"Location '{address}' not found. Please try a more specific address (e.g., 'San Francisco, CA' or '123 Main St, New York, NY')", "source": "not_found"}
-        elif data['status'] == 'REQUEST_DENIED': return {"error": "Google Maps API request denied. Please check your API key permissions.", "source": "api_error"}
-        else: return {"error": f"Unable to find location '{address}'. Status: {data.get('status')}", "source": "api_error"}
+        elif data['status'] == 'ZERO_RESULTS': 
+            return {"error": f"Location '{address}' not found. Please try a more specific address (e.g., 'San Francisco, CA' or '123 Main St, New York, NY')", "source": "not_found"}
+        elif data['status'] == 'REQUEST_DENIED': 
+            return {"error": "Google Maps API request denied. Please check your API key permissions.", "source": "api_error"}
+        else: 
+            return {"error": f"Unable to find location '{address}'. Status: {data.get('status')}", "source": "api_error"}
             
-    except requests.exceptions.Timeout: return {"error": "Location lookup timed out. Please try again.", "source": "timeout"}
+    except requests.exceptions.Timeout: 
+        return {"error": "Location lookup timed out. Please try again.", "source": "timeout"}
     except Exception as e:
         print(f"Geocoding error: {e}")
         return {"error": f"Error looking up location: {str(e)}", "source": "error"}
