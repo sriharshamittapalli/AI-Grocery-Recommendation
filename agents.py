@@ -3,6 +3,7 @@ import requests
 import json
 from typing import List, Dict, Any
 import itertools
+from secrets_utils import get_secret
 
 
 try:
@@ -160,7 +161,7 @@ def find_stores_with_maps_api(location: str, preferred_chains: List[str], max_di
         print(f"\nFound {len(final_stores)} best stores across all chains.")
         return final_stores
 
-    api_key = os.getenv('Maps_API_KEY') or os.getenv('Maps_API_KEY')
+    api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')
     if not api_key: raise ValueError("Google Maps API key is required.")
     if not location: raise ValueError("Location is required.")
 
@@ -225,8 +226,8 @@ def estimate_prices_simple(items: List[str], stores: List[Dict]) -> Dict:
 def get_trip_details_from_api(user_location: Dict, stores: List[Dict]) -> Dict:
     print("--- RUNNING NEW, OPTIMIZED ROUTE FUNCTION ---")
     
-    api_key = os.getenv('Maps_API_KEY') or os.getenv('Maps_API_KEY')
-    if not api_key: raise ValueError("Google Maps API key is required for accurate distance calculations. Please add Maps_API_KEY to your .env file.")
+    api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')
+    if not api_key: raise ValueError("Google Maps API key is required for accurate distance calculations. Please add GOOGLE_MAPS_API_KEY to your .env file or Streamlit secrets.")
     if not stores: return {'distance_meters': 0, 'duration_seconds': 0, 'optimized_stores': []}
 
     origin = f"{user_location['lat']},{user_location['lng']}"
