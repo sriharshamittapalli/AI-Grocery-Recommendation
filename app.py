@@ -279,6 +279,41 @@ def geocode_address(address: str) -> Dict[str, Any]:
 def main():
     st.title("🤖 Smart Grocery Assistant")
     st.subheader("Google ADK Multi-Agent Shopping Optimization")
+    
+    # DEBUG: Add debugging info at the top of the app for Streamlit Cloud
+    with st.expander("🔧 Debug Information (Streamlit Cloud)", expanded=False):
+        st.write("**Environment Check:**")
+        try:
+            import streamlit as st
+            if hasattr(st, 'secrets'):
+                st.write("✅ st.secrets is available")
+                try:
+                    # Check if our key exists in secrets
+                    if 'GOOGLE_MAPS_API_KEY' in st.secrets:
+                        key_value = st.secrets['GOOGLE_MAPS_API_KEY']
+                        st.write(f"✅ GOOGLE_MAPS_API_KEY found in secrets")
+                        st.write(f"📏 Key length: {len(key_value)}")
+                        st.write(f"🔤 Key starts with: {key_value[:15]}...")
+                        st.write(f"🔍 Is placeholder?: {key_value.startswith('YOUR_')}")
+                    else:
+                        st.write("❌ GOOGLE_MAPS_API_KEY not found in st.secrets")
+                        st.write(f"Available secrets keys: {list(st.secrets.keys())}")
+                except Exception as e:
+                    st.write(f"❌ Error accessing secrets: {e}")
+            else:
+                st.write("❌ st.secrets not available")
+        except Exception as e:
+            st.write(f"❌ Error checking Streamlit: {e}")
+        
+        # Test the secrets utility
+        from secrets_utils import get_secret
+        st.write("**Secrets Utility Test:**")
+        test_key = get_secret('GOOGLE_MAPS_API_KEY')
+        if test_key:
+            st.write(f"✅ get_secret() returned: {test_key[:15]}...")
+        else:
+            st.write("❌ get_secret() returned None")
+    
     multi_agent = GoogleADKMultiAgent()
     if 'workflow_inputs' not in st.session_state: st.session_state.workflow_inputs = None
     if 'workflow_results' not in st.session_state: st.session_state.workflow_results = None
