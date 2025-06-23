@@ -21,7 +21,7 @@ class GoogleADKMultiAgent:
         self.price_optimizer_agent = price_optimizer_agent
         self.route_optimizer_agent = route_optimizer_agent
         self.shopping_advisor_agent = shopping_advisor_agent
-        print(f"🤖 Initialized Google ADK Multi-Agent System (ADK Available: {ADK_AVAILABLE})")
+    
     
     # In AI Grocery Recommendation/app.py
     # Replace the entire function with this corrected version
@@ -35,66 +35,44 @@ class GoogleADKMultiAgent:
         2. User selects stores + strict mode: Agents must visit all selected stores, optimize only route and item allocation
         3. User selects stores + non-strict mode: Agents treat selections as suggestions, optimize everything including store selection
         """
-        print(f"🤖 Starting Google ADK Multi-Agent Workflow")
+
         
         # STEP 1: Store Finder Agent - Use Google ADK agent to find nearby stores
         original_preferred_stores = preferred_stores.copy() if preferred_stores else []
         search_chains = preferred_stores if preferred_stores else ['Walmart', 'Target', 'Kroger', 'Costco', 'Whole Foods', 'Safeway', 'Meijer']
         
-        print(f"🏪 [STEP 1] Delegating to Store Finder Agent...")
-        
+        # STEP 1: Store Finder Agent
         if ADK_AVAILABLE:
             try:
                 store_request = { 'task': 'find_nearby_stores', 'location': location, 'preferred_chains': search_chains, 'max_distance_miles': max_distance_miles, 'user_requirements': { 'strict_mode': strict_mode, 'original_preferences': original_preferred_stores } }
                 agent_request = AgentRequest( content=f"Find grocery stores near {location.get('formatted_address', 'user location')} within {max_distance_miles} miles. Search for these chains: {', '.join(search_chains)}. Return store details including name, address, coordinates, and chain information.", context=store_request )
                 store_response = self.store_finder_agent.run(agent_request)
-                print(f"🏪 [STORE FINDER AGENT] Response received: {type(store_response)}")
-                
-                # For now, extract stores using the tool function (full ADK integration would parse agent response)
                 stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
-                print(f"🏪 [STORE FINDER AGENT] Found {len(stores)} stores via ADK workflow")
-                
             except Exception as e:
-                print(f"❌ [STORE FINDER AGENT] Error: {e}")
-                print("🔄 [STORE FINDER AGENT] Falling back to direct tool call...")
                 stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
         else:
-            print("⚠️ [STORE FINDER AGENT] ADK not available, using fallback...")
             stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
         
-        if not stores: return { 'status': 'error', 'message': f'🏪 [STORE FINDER AGENT] No {", ".join(search_chains)} stores found near {location.get("formatted_address", "your location")}. This could be due to: 1) Remote location with no nearby stores, 2) API rate limits, or 3) Specific store chains not available in your area. Try selecting different store chains or a more urban location.', 'stores': [], 'debug_info': { 'location': location, 'preferred_stores': original_preferred_stores, 'api_key_available': bool(get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')), 'adk_available': ADK_AVAILABLE } }
+        if not stores: return { 'status': 'error', 'message': f'🏪 [STORE FINDER AGENT] No {", ".join(search_chains)} stores found near {location.get("formatted_address", "your location")}. This could be due to: 1) Remote location with no nearby stores, 2) API rate limits, or 3) Specific store chains not available in your area. Try selecting different store chains or a more urban location.', 'stores': [] }
         
-        print(f"💰 [STEP 2] Delegating to Price Optimizer Agent...")
-        
+        # STEP 2: Price Optimizer Agent  
         if ADK_AVAILABLE:
             try:
                 price_request = AgentRequest( content=f"Estimate prices for {len(items)} grocery items across {len(stores)} stores. Items: {', '.join(items)}. Stores: {', '.join([s['name'] for s in stores])}. Provide detailed price comparisons and identify best deals.", context={ 'task': 'estimate_prices', 'items': items, 'stores': stores, 'analysis_type': 'comprehensive_comparison' } )
-                
                 price_response = self.price_optimizer_agent.run(price_request)
-                print(f"💰 [PRICE OPTIMIZER AGENT] Response received: {type(price_response)}")
-                
-                # Extract price data using tool function (full ADK would parse agent response)
                 prices_data = estimate_prices_simple(items, stores)
-                print(f"💰 [PRICE OPTIMIZER AGENT] Analyzed prices for {len(items)} items at {len(stores)} stores")
-                
             except Exception as e:
-                print(f"❌ [PRICE OPTIMIZER AGENT] Error: {e}")
-                print("🔄 [PRICE OPTIMIZER AGENT] Falling back to direct tool call...")
                 prices_data = estimate_prices_simple(items, stores)
-        else: print("⚠️ [PRICE OPTIMIZER AGENT] ADK not available, using fallback...")
-        prices_data = estimate_prices_simple(items, stores)
+        else:
+            prices_data = estimate_prices_simple(items, stores)
 
-        print(f"🧠 [STEP 3] Delegating to Shopping Strategist Agent...")
-        
+        # STEP 3: Shopping Strategist Agent
         if ADK_AVAILABLE:
             try:
                 strategy_request = AgentRequest( content=f"Analyze optimal shopping strategy for {len(items)} items across {len(stores)} stores. Mode: {'Strict' if strict_mode else 'Optimized'}. User preferences: {original_preferred_stores}. Consider cost-benefit analysis including travel costs.", context={ 'task': 'optimize_shopping_strategy', 'user_location': location, 'items': items, 'price_data': prices_data, 'available_stores': stores, 'strict_mode': strict_mode, 'preferred_stores': original_preferred_stores } )
                 strategy_response = self.shopping_advisor_agent.run(strategy_request)
-                print(f"🧠 [SHOPPING STRATEGIST AGENT] Response received: {type(strategy_response)}")
-                
             except Exception as e:
-                print(f"❌ [SHOPPING STRATEGIST AGENT] Error: {e}")
-                print("🔄 [SHOPPING STRATEGIST AGENT] Falling back to local strategist...")
+                pass
         
         # Use enhanced strategist (now ADK-powered internally)
         strategist = ShoppingStrategist(user_location=location, all_items=items, price_data=prices_data)
@@ -103,32 +81,23 @@ class GoogleADKMultiAgent:
         
         if not best_plan: return {'status': 'error', 'message': '🧠 [SHOPPING STRATEGIST AGENT] Could not generate a shopping plan.', 'stores': stores}
 
-        print(f"🗺️ [STEP 4] Delegating to Route Optimizer Agent...")
-        
+        # STEP 4: Route Optimizer Agent
         if ADK_AVAILABLE:
             try:
                 route_request = AgentRequest( content=f"Generate optimal route for shopping at {len(best_plan['optimized_stores_in_route'])} stores. Calculate travel costs, time, and create Google Maps URL. Stores: {', '.join([s['name'] for s in best_plan['optimized_stores_in_route']])}", context={ 'task': 'optimize_route', 'user_location': location, 'stores': best_plan['optimized_stores_in_route'], 'travel_preferences': {'max_distance_miles': max_distance_miles} } )
                 route_response = self.route_optimizer_agent.run(route_request)
-                print(f"🗺️ [ROUTE OPTIMIZER AGENT] Response received: {type(route_response)}")
-                
             except Exception as e:
-                print(f"❌ [ROUTE OPTIMIZER AGENT] Error: {e}")
-                print("🔄 [ROUTE OPTIMIZER AGENT] Falling back to direct URL generation...")
+                pass
         
         maps_url = create_Maps_url(location, best_plan['optimized_stores_in_route'])
 
-        # STEP 5: Shopping Advisor Agent - Generate final recommendations
-        print(f"📋 [STEP 5] Delegating to Shopping Advisor Agent...")
-        
+        # STEP 5: Shopping Advisor Agent
         if ADK_AVAILABLE:
             try:
                 advisor_request = AgentRequest( content=f"Generate comprehensive shopping recommendations based on analysis. Scenario: {best_plan.get('scenario', 'unknown')}. Total cost: ${best_plan['total_plan_cost']:.2f}. Stores: {', '.join(best_plan['plan_stores'])}. Create user-friendly advice with cost breakdown and justifications.", context={ 'task': 'generate_final_recommendations', 'best_plan': best_plan, 'scenario': best_plan.get('scenario', 'unknown'), 'maps_url': maps_url, 'user_preferences': { 'strict_mode': strict_mode, 'preferred_stores': original_preferred_stores, 'max_distance': max_distance_miles } } )
                 advisor_response_obj = self.shopping_advisor_agent.run(advisor_request)
-                print(f"📋 [SHOPPING ADVISOR AGENT] Response received: {type(advisor_response_obj)}")
-                
             except Exception as e:
-                print(f"❌ [SHOPPING ADVISOR AGENT] Error: {e}")
-                print("🔄 [SHOPPING ADVISOR AGENT] Falling back to template generation...")
+                pass
         
         # Generate scenario-specific advisor response (enhanced with ADK insights)
         scenario = best_plan.get('scenario', 'unknown')
@@ -197,7 +166,7 @@ class GoogleADKMultiAgent:
                 💡 **Cost-Benefit Analysis**: Your selections align with the optimal cost-benefit analysis!
                 """
 
-        print(f"✅ [WORKFLOW COMPLETE] Google ADK Multi-Agent workflow finished successfully")
+
 
         return { 'status': 'success', 'stores': stores,  'best_plan': best_plan, 'maps_url': maps_url, 'advisor_response': advisor_response, 'scenario': 'strict' if strict_mode else 'optimized', 'workflow_metadata': { 'adk_available': ADK_AVAILABLE, 'agents_used': [ 'store_finder_agent', 'price_optimizer_agent', 'shopping_strategist_agent', 'route_optimizer_agent', 'shopping_advisor_agent' ], 'total_stores_analyzed': len(stores), 'total_items_priced': len(items), 'optimization_mode': scenario } }
     
@@ -317,8 +286,7 @@ def main():
                     
                     if workflow_result.get('status') != 'success':
                         st.error(f"❌ {workflow_result.get('message', 'Multi-agent workflow failed')}")
-                        if 'debug_info' in workflow_result:
-                            with st.expander("🔍 Debug Information"): st.json(workflow_result['debug_info'])
+
                         st.stop()
                 
                 status.update(label="✅ Optimal Shopping Strategy Found!", state="complete")
@@ -364,10 +332,7 @@ def main():
             st.header("🗺️ Optimized Shopping Route")
             optimized_stores = best_plan.get('optimized_stores_in_route', [])
 
-            print("\n" + "="*50)
-            print("--- FINAL CHECK: Store order passed to the map display ---")
-            for store in optimized_stores: print(f"  - {store['name']}")
-            print("="*50 + "\n")
+
             
             if not optimized_stores: st.info("No route is available.")
             else:

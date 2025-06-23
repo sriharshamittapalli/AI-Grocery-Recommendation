@@ -20,7 +20,7 @@ try:
 
             try: self._adk_agent = Agent(name=self.name, model=self.model)
             except Exception as e:
-                print(f"⚠️ Failed to create ADK agent {self.name}: {e}")
+        
                 self._adk_agent = None
             
         def run(self, request):
@@ -42,8 +42,7 @@ try:
         def __init__(self, content, **kwargs): self.content = content
             
 except ImportError as e:
-    print(f"❌ Google ADK not available: {e}")
-    print("🔧 Please install: pip install google-adk")
+    
     ADK_AVAILABLE = False
 
     class LlmAgent:
@@ -87,11 +86,11 @@ def find_stores_with_maps_api(location: str, preferred_chains: List[str], max_di
         lat, lng = loc['lat'], loc['lng']
         final_stores = []
         
-        print(f"Finding nearest stores for location: {lat}, {lng}")
+    
         
         # Iterate through each requested store chain
         for chain in chains[:5]: # Limit to 5 chains per request to be safe
-            print(f"\n=== Finding nearest {chain} ===")
+    
             chain_candidates = [] # Stores all potential candidates for this chain
             
             try:
@@ -101,7 +100,7 @@ def find_stores_with_maps_api(location: str, preferred_chains: List[str], max_di
                 data = response.json()
                 
                 if data.get('status') == 'OK' and data.get('results'):
-                    print(f"  Found {len(data['results'])} potential results for {chain}")
+            
                     
                     # Iterate through ALL results from the API for this chain
                     for place in data['results']:
@@ -158,7 +157,7 @@ def find_stores_with_maps_api(location: str, preferred_chains: List[str], max_di
                 print(f"  ❌ Error searching for {chain}: {e}")
                 continue
         
-        print(f"\nFound {len(final_stores)} best stores across all chains.")
+    
         return final_stores
 
     api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')
@@ -224,7 +223,7 @@ def estimate_prices_simple(items: List[str], stores: List[Dict]) -> Dict:
     return prices
 
 def get_trip_details_from_api(user_location: Dict, stores: List[Dict]) -> Dict:
-    print("--- RUNNING NEW, OPTIMIZED ROUTE FUNCTION ---")
+
     
     api_key = get_secret('GOOGLE_MAPS_API_KEY') or get_secret('Maps_API_KEY')
     if not api_key: raise ValueError("Google Maps API key is required for accurate distance calculations. Please add GOOGLE_MAPS_API_KEY to your .env file or Streamlit secrets.")
@@ -403,7 +402,7 @@ class ShoppingStrategist:
             "scenario_3_strict_mode" if strict_mode else
             "scenario_2_suggestions_mode"
         )
-        print(f"✅ DETERMINISTIC RESULT: Best plan uses {best_plan['plan_stores']} with total cost ${best_plan['total_plan_cost']:.2f}")
+    
         return best_plan
 
 def create_Maps_url(user_location: Dict[str, Any], stores: List[Dict[str, Any]]) -> str:
