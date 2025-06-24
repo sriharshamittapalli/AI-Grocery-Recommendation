@@ -29,7 +29,7 @@ from secrets_utils import get_secret
 load_dotenv()
 
 st.set_page_config(
-    page_title="🤖 Smart Grocery Assistant (Multi-Agent)",
+    page_title="Smart Grocery Assistant (Multi-Agent)",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
