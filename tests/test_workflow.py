@@ -95,3 +95,10 @@ def test_execute_workflow_returns_dict(monkeypatch):
     assert isinstance(result, dict)
     assert result['status'] == 'success'
     assert 'advisor_response' in result
+
+
+def test_calculate_travel_costs():
+    result = agents.calculate_travel_costs(1609, 3600)
+    assert result['gas_cost'] == 0.14
+    assert result['time_hours'] == 1.0
+    assert result['total_travel_cost'] == 20.14
