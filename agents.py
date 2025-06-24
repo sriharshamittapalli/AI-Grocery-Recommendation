@@ -188,15 +188,41 @@ def find_stores_with_maps_api(location: str, preferred_chains: List[str], max_di
 
 def estimate_prices_simple(items: List[str], stores: List[Dict]) -> Dict:
 
+    base_prices = {
+        'milk': 1.0, 'bread': 1.3, 'eggs': 1.6, 'bananas': 1.9, 'avocados': 2.2,
+        'chicken breast': 2.5, 'rice': 2.8, 'pasta': 3.1, 'cheese': 3.4,
+        'yogurt': 3.7, 'butter': 1.2, 'apples': 1.5, 'oranges': 1.8,
+        'tomatoes': 2.1, 'lettuce': 2.4, 'cereal': 2.7, 'soda': 3.0,
+        'coffee': 3.3, 'tea': 3.6, 'bacon': 3.9, 'sausage': 1.4,
+        'ground beef': 1.7, 'pork chops': 2.0, 'oatmeal': 2.3, 'flour': 2.6,
+        'sugar': 2.9, 'salt': 3.2, 'pepper': 3.5, 'olive oil': 3.8,
+        'canola oil': 4.1, 'peanut butter': 1.6, 'jelly': 1.9,
+        'canned beans': 2.2, 'canned corn': 2.5, 'canned tomatoes': 2.8,
+        'pasta sauce': 3.1, 'ketchup': 3.4, 'mustard': 3.7, 'mayonnaise': 4.0,
+        'grapes': 4.3, 'strawberries': 1.8, 'blueberries': 2.1,
+        'spinach': 2.4, 'onions': 2.7, 'potatoes': 3.0, 'carrots': 3.3,
+        'broccoli': 3.6, 'cucumbers': 3.9, 'peppers': 4.2, 'canned tuna': 4.5,
+        'chips': 2.0, 'crackers': 2.3, 'cookies': 2.6, 'nuts': 2.9,
+        'granola bars': 3.2, 'popcorn': 3.5, 'chocolate': 3.8,
+        'ice cream': 4.1, 'bagels': 4.4, 'tortillas': 4.7
+    }
+
+    store_multipliers = {
+        'Walmart': 0.9,
+        'Target': 1.0,
+        'Kroger': 0.95,
+        'Costco': 0.85,
+        'Whole Foods': 1.3,
+        'Safeway': 1.05,
+        'Meijer': 0.92,
+    }
+
     price_database = {
-        'milk': {'Walmart': 3.48, 'Target': 3.79, 'Kroger': 3.29, 'Costco': 2.98, 'Whole Foods': 4.99, 'Safeway': 3.89, 'Meijer': 3.38},
-        'bread': {'Walmart': 1.98, 'Target': 2.49, 'Kroger': 1.79, 'Costco': 1.49, 'Whole Foods': 3.99, 'Safeway': 2.29, 'Meijer': 1.88},
-        'eggs': {'Walmart': 2.68, 'Target': 2.89, 'Kroger': 2.48, 'Costco': 4.99, 'Whole Foods': 5.49, 'Safeway': 2.99, 'Meijer': 2.58},
-        'bananas': {'Walmart': 0.58, 'Target': 0.69, 'Kroger': 0.68, 'Costco': 1.48, 'Whole Foods': 0.99, 'Safeway': 0.79, 'Meijer': 0.68},
-        'avocados': {'Walmart': 0.98, 'Target': 1.25, 'Kroger': 1.00, 'Costco': 4.99, 'Whole Foods': 2.49, 'Safeway': 1.49, 'Meijer': 0.98},
-        'chicken breast': {'Walmart': 3.98, 'Target': 4.49, 'Kroger': 3.79, 'Costco': 2.99, 'Whole Foods': 7.99, 'Safeway': 4.99, 'Meijer': 3.88},
-        'rice': {'Walmart': 2.98, 'Target': 3.49, 'Kroger': 2.79, 'Costco': 8.99, 'Whole Foods': 4.99, 'Safeway': 3.29, 'Meijer': 2.88},
-        'pasta': {'Walmart': 1.48, 'Target': 1.79, 'Kroger': 1.29, 'Costco': 3.99, 'Whole Foods': 2.99, 'Safeway': 1.89, 'Meijer': 1.38}
+        item: {
+            store: round(base_prices[item] * mult + ((idx % 5) * 0.05), 2)
+            for store, mult in store_multipliers.items()
+        }
+        for idx, item in enumerate(base_prices)
     }
     
     prices = {}
