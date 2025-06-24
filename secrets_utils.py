@@ -15,20 +15,20 @@ except ImportError:
 def get_secret(key: str, default: str = None) -> str:
     """
     Get secret from Streamlit secrets manager or environment variables
-    
+
     Args:
         key: The secret key to retrieve
         default: Default value if key not found
-        
+
     Returns:
         The secret value or default
     """
-    
+
     # First try environment variables (works for both local and some cloud setups)
     env_value = os.getenv(key)
     if env_value and not env_value.startswith('YOUR_') and len(env_value) > 10:
         return env_value
-    
+
     # Try Streamlit secrets (for Streamlit Cloud deployment)
     try:
         import streamlit as st
@@ -38,5 +38,5 @@ def get_secret(key: str, default: str = None) -> str:
                 return streamlit_value
     except:
         pass  # Streamlit not available or no secrets
-    
-    return default 
+
+    return default
