@@ -426,7 +426,8 @@ def calculate_total_cost(item_cost, travel_distance, travel_time):
 
 **License**: MIT License - see [LICENSE](LICENSE) file for details  
 **Privacy**: No personal data stored, Google APIs used per their terms  
-**Compliance**: Follows Google Cloud Platform usage guidelines  
+**Compliance**: Follows Google Cloud Platform usage guidelines
+**Disclaimer**: This project is an independent demonstration and is not affiliated with or endorsed by Google. Generative AI outputs may be inaccurate or incomplete.
 
 ---
 
