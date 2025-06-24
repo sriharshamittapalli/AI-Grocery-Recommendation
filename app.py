@@ -23,9 +23,6 @@ class GoogleADKMultiAgent:
         self.shopping_advisor_agent = shopping_advisor_agent
     
     
-    # In AI Grocery Recommendation/app.py
-    # Replace the entire function with this corrected version
-
     def execute_shopping_workflow(self, location: str, items: List[str], preferred_stores: List[str], strict_mode: bool, max_distance_miles: int = 30):
         """
         Execute complete Google ADK multi-agent workflow with real agent communication.
@@ -40,28 +37,67 @@ class GoogleADKMultiAgent:
         # STEP 1: Store Finder Agent - Use Google ADK agent to find nearby stores
         original_preferred_stores = preferred_stores.copy() if preferred_stores else []
         search_chains = preferred_stores if preferred_stores else ['Walmart', 'Target', 'Kroger', 'Costco', 'Whole Foods', 'Safeway', 'Meijer']
-        
-        # STEP 1: Store Finder Agent
+
         if ADK_AVAILABLE:
             try:
-                store_request = { 'task': 'find_nearby_stores', 'location': location, 'preferred_chains': search_chains, 'max_distance_miles': max_distance_miles, 'user_requirements': { 'strict_mode': strict_mode, 'original_preferences': original_preferred_stores } }
-                agent_request = AgentRequest( content=f"Find grocery stores near {location.get('formatted_address', 'user location')} within {max_distance_miles} miles. Search for these chains: {', '.join(search_chains)}. Return store details including name, address, coordinates, and chain information.", context=store_request )
+                store_request = {
+                    'task': 'find_nearby_stores',
+                    'location': location,
+                    'preferred_chains': search_chains,
+                    'max_distance_miles': max_distance_miles,
+                    'user_requirements': {
+                        'strict_mode': strict_mode,
+                        'original_preferences': original_preferred_stores,
+                    },
+                }
+                agent_request = AgentRequest(
+                    content=(
+                        f"Find grocery stores near {location.get('formatted_address', 'user location')} "
+                        f"within {max_distance_miles} miles. Search for these chains: {', '.join(search_chains)}."
+                        " Return store details including name, address, coordinates, and chain information."
+                    ),
+                    context=store_request,
+                )
                 store_response = self.store_finder_agent.run(agent_request)
-                stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
-            except Exception as e:
+                stores = (
+                    store_response.content
+                    if isinstance(store_response, AgentResponse)
+                    else store_response
+                )
+                if not isinstance(stores, list):
+                    stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
+            except Exception:
                 stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
         else:
             stores = find_stores_with_maps_api(location, search_chains, max_distance_miles)
         
         if not stores: return { 'status': 'error', 'message': f'🏪 [STORE FINDER AGENT] No {", ".join(search_chains)} stores found near {location.get("formatted_address", "your location")}. This could be due to: 1) Remote location with no nearby stores, 2) API rate limits, or 3) Specific store chains not available in your area. Try selecting different store chains or a more urban location.', 'stores': [] }
         
-        # STEP 2: Price Optimizer Agent  
+        # STEP 2: Price Optimizer Agent
         if ADK_AVAILABLE:
             try:
-                price_request = AgentRequest( content=f"Estimate prices for {len(items)} grocery items across {len(stores)} stores. Items: {', '.join(items)}. Stores: {', '.join([s['name'] for s in stores])}. Provide detailed price comparisons and identify best deals.", context={ 'task': 'estimate_prices', 'items': items, 'stores': stores, 'analysis_type': 'comprehensive_comparison' } )
+                price_request = AgentRequest(
+                    content=(
+                        f"Estimate prices for {len(items)} grocery items across {len(stores)} stores. "
+                        f"Items: {', '.join(items)}. Stores: {', '.join([s['name'] for s in stores])}."
+                        " Provide detailed price comparisons and identify best deals."
+                    ),
+                    context={
+                        'task': 'estimate_prices',
+                        'items': items,
+                        'stores': stores,
+                        'analysis_type': 'comprehensive_comparison',
+                    },
+                )
                 price_response = self.price_optimizer_agent.run(price_request)
-                prices_data = estimate_prices_simple(items, stores)
-            except Exception as e:
+                prices_data = (
+                    price_response.content
+                    if isinstance(price_response, AgentResponse)
+                    else price_response
+                )
+                if not isinstance(prices_data, dict):
+                    prices_data = estimate_prices_simple(items, stores)
+            except Exception:
                 prices_data = estimate_prices_simple(items, stores)
         else:
             prices_data = estimate_prices_simple(items, stores)
@@ -69,44 +105,104 @@ class GoogleADKMultiAgent:
         # STEP 3: Shopping Strategist Agent
         if ADK_AVAILABLE:
             try:
-                strategy_request = AgentRequest( content=f"Analyze optimal shopping strategy for {len(items)} items across {len(stores)} stores. Mode: {'Strict' if strict_mode else 'Optimized'}. User preferences: {original_preferred_stores}. Consider cost-benefit analysis including travel costs.", context={ 'task': 'optimize_shopping_strategy', 'user_location': location, 'items': items, 'price_data': prices_data, 'available_stores': stores, 'strict_mode': strict_mode, 'preferred_stores': original_preferred_stores } )
+                strategy_request = AgentRequest(
+                    content=(
+                        f"Analyze optimal shopping strategy for {len(items)} items across {len(stores)} stores. "
+                        f"Mode: {'Strict' if strict_mode else 'Optimized'}. User preferences: {original_preferred_stores}."
+                        " Consider cost-benefit analysis including travel costs."
+                    ),
+                    context={
+                        'task': 'optimize_shopping_strategy',
+                        'user_location': location,
+                        'items': items,
+                        'price_data': prices_data,
+                        'available_stores': stores,
+                        'strict_mode': strict_mode,
+                        'preferred_stores': original_preferred_stores,
+                    },
+                )
                 strategy_response = self.shopping_advisor_agent.run(strategy_request)
-            except Exception as e:
-                pass
+                strategy_data = strategy_response.content if isinstance(strategy_response, AgentResponse) else None
+            except Exception:
+                strategy_data = None
         
-        # Use enhanced strategist (now ADK-powered internally)
         strategist = ShoppingStrategist(user_location=location, all_items=items, price_data=prices_data)
-        
-        best_plan = strategist.find_best_strategy( available_stores=stores, strict_mode=strict_mode, preferred_store_names=original_preferred_stores )
+
+        if ADK_AVAILABLE and strategy_data and isinstance(strategy_data, dict):
+            best_plan = strategy_data
+        else:
+            best_plan = strategist.find_best_strategy(
+                available_stores=stores,
+                strict_mode=strict_mode,
+                preferred_store_names=original_preferred_stores,
+            )
         
         if not best_plan: return {'status': 'error', 'message': '🧠 [SHOPPING STRATEGIST AGENT] Could not generate a shopping plan.', 'stores': stores}
 
         # STEP 4: Route Optimizer Agent
         if ADK_AVAILABLE:
             try:
-                route_request = AgentRequest( content=f"Generate optimal route for shopping at {len(best_plan['optimized_stores_in_route'])} stores. Calculate travel costs, time, and create Google Maps URL. Stores: {', '.join([s['name'] for s in best_plan['optimized_stores_in_route']])}", context={ 'task': 'optimize_route', 'user_location': location, 'stores': best_plan['optimized_stores_in_route'], 'travel_preferences': {'max_distance_miles': max_distance_miles} } )
+                route_request = AgentRequest(
+                    content=(
+                        f"Generate optimal route for shopping at {len(best_plan['optimized_stores_in_route'])} stores. "
+                        "Calculate travel costs, time, and create Google Maps URL. "
+                        f"Stores: {', '.join([s['name'] for s in best_plan['optimized_stores_in_route']])}"
+                    ),
+                    context={
+                        'task': 'optimize_route',
+                        'user_location': location,
+                        'stores': best_plan['optimized_stores_in_route'],
+                        'travel_preferences': {'max_distance_miles': max_distance_miles},
+                    },
+                )
                 route_response = self.route_optimizer_agent.run(route_request)
-            except Exception as e:
-                pass
-        
-        maps_url = create_Maps_url(location, best_plan['optimized_stores_in_route'])
+                route_data = route_response.content if isinstance(route_response, AgentResponse) else None
+            except Exception:
+                route_data = None
+        else:
+            route_data = None
 
-        # STEP 5: Shopping Advisor Agent
+        maps_url = (
+            route_data.get('maps_url') if isinstance(route_data, dict) else create_Maps_url(location, best_plan['optimized_stores_in_route'])
+        )
+
+        advisor_response = None
         if ADK_AVAILABLE:
             try:
-                advisor_request = AgentRequest( content=f"Generate comprehensive shopping recommendations based on analysis. Scenario: {best_plan.get('scenario', 'unknown')}. Total cost: ${best_plan['total_plan_cost']:.2f}. Stores: {', '.join(best_plan['plan_stores'])}. Create user-friendly advice with cost breakdown and justifications.", context={ 'task': 'generate_final_recommendations', 'best_plan': best_plan, 'scenario': best_plan.get('scenario', 'unknown'), 'maps_url': maps_url, 'user_preferences': { 'strict_mode': strict_mode, 'preferred_stores': original_preferred_stores, 'max_distance': max_distance_miles } } )
+                advisor_request = AgentRequest(
+                    content=(
+                        f"Generate comprehensive shopping recommendations based on analysis. Scenario: {best_plan.get('scenario', 'unknown')}. "
+                        f"Total cost: ${best_plan['total_plan_cost']:.2f}. Stores: {', '.join(best_plan['plan_stores'])}. "
+                        "Create user-friendly advice with cost breakdown and justifications."
+                    ),
+                    context={
+                        'task': 'generate_final_recommendations',
+                        'best_plan': best_plan,
+                        'scenario': best_plan.get('scenario', 'unknown'),
+                        'maps_url': maps_url,
+                        'user_preferences': {
+                            'strict_mode': strict_mode,
+                            'preferred_stores': original_preferred_stores,
+                            'max_distance': max_distance_miles,
+                        },
+                    },
+                )
                 advisor_response_obj = self.shopping_advisor_agent.run(advisor_request)
-            except Exception as e:
-                pass
+                advisor_response = (
+                    advisor_response_obj.content
+                    if isinstance(advisor_response_obj, AgentResponse)
+                    else str(advisor_response_obj)
+                )
+            except Exception:
+                advisor_response = None
         
         # Generate scenario-specific advisor response (enhanced with ADK insights)
         scenario = best_plan.get('scenario', 'unknown')
 
-        # --- THIS ENTIRE SECTION IS NOW CORRECTED ---
         gas_cost_only = best_plan.get('travel_costs', {}).get('gas_cost', 0)
         display_total_cost = best_plan.get('item_cost', 0) + gas_cost_only
 
-        if scenario == 'scenario_1_no_preferences':
+        if advisor_response is None and scenario == 'scenario_1_no_preferences':
             advisor_response = f"""
             **🎯 Optimal Shopping Strategy - Algorithm Recommendation**
 
@@ -119,7 +215,7 @@ class GoogleADKMultiAgent:
             
             💡 **Cost-Benefit Analysis**: This plan balances item savings against gas and time costs (internally). The cost shown is for items and gas only.
             """
-        elif scenario == 'scenario_3_strict_mode':
+        elif advisor_response is None and scenario == 'scenario_3_strict_mode':
             warning_message = ""
             if best_plan.get('warning'):
                 warning_message = f"\n\n> ⚠️ **Note:** {best_plan['warning']}"
@@ -135,7 +231,7 @@ class GoogleADKMultiAgent:
             - **Total Combined Cost:** ${display_total_cost:.2f}
             {warning_message}
             """
-        else:  # suggestions_mode (scenario_2_suggestions_mode)
+        elif advisor_response is None:  # suggestions_mode (scenario_2_suggestions_mode)
             user_store_names = [s['name'] for s in stores if any(pref.lower() in s['name'].lower() or s.get('chain', '').lower() == pref.lower() for pref in original_preferred_stores)]
             chose_different = not all(store in user_store_names for store in best_plan['plan_stores'])
             
