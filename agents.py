@@ -7,61 +7,65 @@ from secrets_utils import get_secret
 
 
 try:
-    from google.adk import Agent
+    from google.adk import Agent, AgentRequest, AgentResponse
     from google.adk.tools import FunctionTool
     ADK_AVAILABLE = True
-    
+
     class LlmAgent:
+        """Thin wrapper around google.adk.Agent for easy fallback handling."""
+
         def __init__(self, name=None, model=None, instructions=None, tools=None, **kwargs):
             self.name = name or kwargs.get('name', 'agent')
             self.model = model or 'gemini-2.5-flash'
             self.instructions = instructions
             self.tools = tools or []
 
-            try: self._adk_agent = Agent(name=self.name, model=self.model)
-            except Exception as e:
-        
-                self._adk_agent = None
-            
-        def run(self, request):
-            if self._adk_agent is None: return f"[ADK AGENT {self.name}] Agent not available, processing: {str(request)[:100]}..."
-            
             try:
-                if isinstance(request, str): return self._adk_agent.run(request)
-                else:
-                    content = getattr(request, 'content', str(request))
-                    return self._adk_agent.run(content)
-            except Exception as e: return f"[ADK AGENT {self.name}] Processed request: {str(request)[:100]}... (Error: {e})"
-    
-    class AgentRequest:
-        def __init__(self, content, context=None, **kwargs):
-            self.content = content
-            self.context = context or {}
-    
-    class AgentResponse:
-        def __init__(self, content, **kwargs): self.content = content
+                self._adk_agent = Agent(
+                    name=self.name,
+                    model=self.model,
+                    instructions=self.instructions,
+                    tools=self.tools,
+                )
+            except Exception:
+                self._adk_agent = None
+
+        def run(self, request):
+            if self._adk_agent is None:
+                return f"[ADK AGENT {self.name}] Agent not available, processing: {str(request)[:100]}..."
+
+            try:
+                if isinstance(request, (str, AgentRequest)):
+                    return self._adk_agent.run(request)
+                return self._adk_agent.run(AgentRequest(content=str(request)))
+            except Exception as e:
+                return f"[ADK AGENT {self.name}] Processed request: {str(request)[:100]}... (Error: {e})"
             
-except ImportError as e:
+except ImportError:
     
     ADK_AVAILABLE = False
 
     class LlmAgent:
+        """Simple fallback agent used when google.adk is unavailable."""
+
         def __init__(self, **kwargs):
             self.name = kwargs.get('name', 'agent')
             self.model = kwargs.get('model', 'gemini-pro')
             self.instructions = kwargs.get('instructions', '')
             self.tools = kwargs.get('tools', [])
-            
-        def run(self, request): return f"[FALLBACK MODE] Agent {self.name} would process: {request}"
+
+        def run(self, request):
+            return f"[FALLBACK MODE] Agent {self.name} would process: {request}"
     
     class FunctionTool:
-        def __init__(self, **kwargs):
-            pass
+        def __init__(self, func=None, **kwargs):
+            self.func = func
     
     class AgentRequest:
-        def __init__(self, content, **kwargs):
+        def __init__(self, content, context=None, **kwargs):
             self.content = content
-    
+            self.context = context or {}
+
     class AgentResponse:
         def __init__(self, content, **kwargs):
             self.content = content
