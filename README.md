@@ -1,6 +1,6 @@
 # 🤖 Google ADK Multi-Agent Grocery Assistant
 
-**Professional Google ADK agent orchestration with real multi-agent coordination** - Built for the Google Cloud Agent Development Kit Hackathon!
+**Multi-agent grocery assistant built with the Google Cloud Agent Development Kit** - Created for the Google Cloud ADK Hackathon.
 
 ## 📱 Live Demo & Screenshots
 
@@ -43,10 +43,10 @@
 - ✅ **Advanced routing algorithms** that factor in travel costs vs. savings
 
 ### 💰 Business Impact:
-- **Average savings**: $15-30 per grocery trip through intelligent store selection
-- **Time optimization**: Reduces total shopping time by 25% via optimized routing
+- **Cost savings focus**: Designed to help reduce grocery bills through intelligent store selection
+- **Time optimization**: Optimizes routing to save travel time
 - **Cost transparency**: Shows exact gas costs, time investment, and net savings
-- **Global reach**: Works in any country with Google Maps coverage (190+ countries)
+- **Global reach**: Works anywhere Google Maps is available
 
 ### 🤖 Google ADK Implementation
 
@@ -249,20 +249,20 @@ graph TB
 - Interactive route maps with Google Maps integration
 - Detailed cost breakdowns and savings calculations
 
-## 🎯 Hackathon Judge Quick Start (30 Seconds!)
+## 🎯 Quick Start Guide
 
 ### Instant Demo Setup:
 ```bash
-# 1. Clone and install (15 seconds)
+# 1. Clone and install
 git clone https://github.com/harsha/AI-Grocery-Recommendation
 cd AI-Grocery-Recommendation
 pip install -r requirements.txt
 
-# 2. Add Google API key (10 seconds)
+# 2. Add Google API key
 cp .env.example .env
 # Add your GOOGLE_MAPS_API_KEY to .env file
 
-# 3. Launch demo (5 seconds)
+# 3. Launch demo
 streamlit run app.py
 ```
 
@@ -270,8 +270,7 @@ streamlit run app.py
 1. **Location**: "San Francisco, CA" 
 2. **Items**: "milk, bread, eggs, bananas, chicken"
 3. **Mode**: Leave stores empty (algorithm decides)
-4. **Expected**: 2-3 store route, $8-12 savings, Google Maps integration
-
+4. **Example output**: optimized multi-store route with estimated savings
 **🎯 Judge Focus Areas**: Multi-agent coordination, real API integration, cost optimization algorithms
 
 ## 🎯 Google ADK Agent Architecture
@@ -332,19 +331,18 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 
 💡 **Cost**: Google provides $200 free credits monthly - plenty for development and demos!
 
-## 📊 Performance Metrics
+## 📊 Project Notes
 
-### Technical Performance:
-- **Response Time**: < 3 seconds for full multi-agent workflow
-- **API Accuracy**: 99%+ location accuracy via Google Places API
-- **Global Coverage**: 190+ countries supported
-- **Scalability**: Handles 100+ concurrent users
+### Technical Notes:
+- Designed for responsive multi-agent workflow
+- Uses Google Places API for accurate location data
+- Works wherever Google Maps is available
+- Built with scalability in mind
 
-### Business Metrics:
-- **Average Savings**: $18.50 per shopping trip
-- **Time Savings**: 23 minutes average reduction
-- **User Satisfaction**: 94% prefer optimized vs. single-store shopping
-- **Cost Effectiveness**: 87% of trips show positive ROI
+### Business Considerations:
+- Aims to reduce grocery costs with optimized store selection
+- Provides travel time and cost estimates
+- Offers a more efficient shopping experience
 
 ## 🔮 Future Roadmap
 
@@ -440,7 +438,7 @@ This **Google ADK Multi-Agent System** demonstrates:
 - ✅ **Global scalability** through Google Cloud API integration
 - ✅ **Innovation in cost optimization** considering all real-world factors
 
-**Perfect demonstration of production-ready multi-agent AI systems!** 🤖
+This project showcases practical multi-agent coordination using the ADK.
 
 ---
 
@@ -448,5 +446,5 @@ This **Google ADK Multi-Agent System** demonstrates:
 ```bash
 streamlit run app.py
 # Try: Location="New York, NY", Items="milk,bread,eggs", No store preferences
-# Expected: 2-store route, ~$10 savings, Google Maps integration
+# Example: optimized route with estimated savings and Google Maps integration
 ```
