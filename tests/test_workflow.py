@@ -39,6 +39,7 @@ sys.modules.setdefault('pandas', pandas_stub)
 import types
 import agents
 from app import GoogleADKMultiAgent
+import mock_data
 
 
 def test_llm_agent_fallback():
@@ -57,16 +58,14 @@ def test_execute_workflow_returns_dict(monkeypatch):
     monkeypatch.setattr(app, "find_stores_with_maps_api", lambda loc, chains, max_distance: [{
         'name': 'StoreA', 'address': 'A', 'lat': 0, 'lng': 0, 'chain': 'A'
     }])
-    monkeypatch.setattr(agents, "estimate_prices_simple", lambda items, stores: {
-        'milk': {'StoreA': {'price': 1.0, 'confidence': 1.0}}
-    })
-    monkeypatch.setattr(app, "estimate_prices_simple", lambda items, stores: {
-        'milk': {'StoreA': {'price': 1.0, 'confidence': 1.0}}
-    })
+    price_data = mock_data.get_scenario1_data()
+    first_item = next(iter(price_data))
+    monkeypatch.setattr(agents, "estimate_prices_simple", lambda items, stores: price_data)
+    monkeypatch.setattr(app, "estimate_prices_simple", lambda items, stores: price_data)
     dummy_plan = {
         'plan_stores': ['StoreA'],
         'optimized_stores_in_route': [{'name': 'StoreA', 'address': 'A', 'lat': 0, 'lng': 0}],
-        'shopping_list': {'StoreA': [{'item': 'milk', 'price': 1.0}]},
+        'shopping_list': {'StoreA': [{'item': first_item, 'price': 1.0}]},
         'item_cost': 1.0,
         'travel_costs': {
             'gas_cost': 0,
@@ -87,7 +86,7 @@ def test_execute_workflow_returns_dict(monkeypatch):
     workflow = GoogleADKMultiAgent()
     result = workflow.execute_shopping_workflow(
         {'lat': 0, 'lng': 0, 'formatted_address': 'Test'},
-        ['milk'],
+        [first_item],
         [],
         False,
         max_distance_miles=5,
